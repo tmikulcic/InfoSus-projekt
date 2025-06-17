@@ -1,50 +1,85 @@
 from flask import Flask, request, jsonify, abort
 from datetime import datetime, timedelta
+from pony import orm
 
 app = Flask(__name__)
 
-vozila = []
-termini_najma = []
+# ====== DB SETUP ======
+DB = orm.Database()
 
-# ===== VOZILO =====
+class Vozilo(DB.Entity):
+    id = orm.PrimaryKey(int, auto=True)
+    broj_sasije = orm.Required(str, unique=True)
+    marka = orm.Required(str)
+    model = orm.Required(str)
+    tip = orm.Required(str)
+    godiste = orm.Required(int)
+    boja = orm.Required(str)
+    tip_goriva = orm.Required(str)
+    cijena_dnevnog_najma = orm.Required(float)
+    termini = orm.Set("TerminNajma")
+
+class TerminNajma(DB.Entity):
+    id = orm.PrimaryKey(int, auto=True)
+    vozilo = orm.Required(Vozilo)
+    datum_od = orm.Required(datetime)
+    datum_do = orm.Required(datetime)
+    status = orm.Required(str)
+    ukupna_cijena_najma = orm.Required(float)
+
+DB.bind(provider='sqlite', filename='najam.db', create_db=True)
+DB.generate_mapping(create_tables=True)
+
+# ===== ENDPOINTI =====
 @app.route('/vozilo', methods=['POST'])
 def dodaj_vozilo():
     data = request.json
-    # Provjera unikatnog broja šasije
-    if any(v['broj_sasije'] == data['broj_sasije'] for v in vozila):
-        abort(400, description='Broj šasije već postoji')
-    vozila.append(data)
-    return jsonify({'message': 'Vozilo dodano'}), 201
+    try:
+        with orm.db_session:
+            Vozilo(
+                broj_sasije=data['broj_sasije'],
+                marka=data['marka'],
+                model=data['model'],
+                tip=data['tip'],
+                godiste=data['godiste'],
+                boja=data['boja'],
+                tip_goriva=data['tip_goriva'],
+                cijena_dnevnog_najma=float(data['cijena_dnevnog_najma'])
+            )
+        return jsonify({'message': 'Vozilo dodano'}), 201
+    except orm.ConstraintError:
+        abort(400, description="Broj šasije već postoji")
 
 @app.route('/vozilo', methods=['GET'])
 def dohvati_vozila():
-    return jsonify(vozila)
+    with orm.db_session:
+        vozila = orm.select(v for v in Vozilo)[:]
+        return jsonify([v.to_dict() for v in vozila])
 
-@app.route('/vozilo/<int:vozilo_id>', methods=['PUT'])
-def zamijeni_vozilo(vozilo_id):
-    novi_podaci = request.json
-    for i, vozilo in enumerate(vozila):
-        if vozilo['id'] == vozilo_id:
-            vozila[i] = novi_podaci
-            return jsonify({'message': 'Vozilo zamijenjeno'}), 200
-    abort(404, description="Vozilo nije pronađeno")
+@app.route('/vozilo/<int:vozilo_id>', methods=['PATCH'])
+def azuriraj_vozilo(vozilo_id):
+    data = request.json
+    with orm.db_session:
+        vozilo = Vozilo.get(id=vozilo_id)
+        if not vozilo:
+            abort(404, description="Vozilo nije pronađeno")
+        for key in ['broj_sasije', 'marka', 'model', 'tip', 'godiste', 'boja', 'tip_goriva', 'cijena_dnevnog_najma']:
+            if key in data:
+                setattr(vozilo, key, data[key])
+        return jsonify({'message': 'Vozilo ažurirano'})
 
 @app.route('/vozilo/<int:vozilo_id>', methods=['DELETE'])
 def obrisi_vozilo(vozilo_id):
-    for i, vozilo in enumerate(vozila):
-        if vozilo['id'] == vozilo_id:
-            del vozila[i]
-            return jsonify({'message': 'Vozilo obrisano'}), 200
-    abort(404, description="Vozilo nije pronađeno")
+    with orm.db_session:
+        vozilo = Vozilo.get(id=vozilo_id)
+        if not vozilo:
+            abort(404, description="Vozilo nije pronađeno")
+        vozilo.delete()
+        return jsonify({'message': 'Vozilo obrisano'})
 
-# ===== TERMIN NAJMA =====
 @app.route('/termin', methods=['POST'])
 def dodaj_termin():
     data = request.json
-    vozilo = next((v for v in vozila if v['id'] == data['vozilo_id']), None)
-    if not vozilo:
-        abort(400, description='Vozilo nije pronađeno')
-
     try:
         datum_od = datetime.strptime(data['datum_od'], '%d-%m-%Y')
         datum_do = datetime.strptime(data['datum_do'], '%d-%m-%Y')
@@ -54,44 +89,60 @@ def dodaj_termin():
     if datum_do < datum_od:
         abort(400, description='Krajnji datum ne može biti prije početnog')
 
-    # Provjera preklapanja termina za to vozilo
-    for termin in termini_najma:
-        if termin['vozilo_id'] == data['vozilo_id']:
-            postojeci_od = datetime.strptime(termin['datum_od'], '%d-%m-%Y')
-            postojeci_do = datetime.strptime(termin['datum_do'], '%d-%m-%Y')
-            if datum_od <= postojeci_do and datum_do >= postojeci_od:
+    with orm.db_session:
+        vozilo = Vozilo.get(id=data['vozilo_id'])
+        if not vozilo:
+            abort(400, description='Vozilo nije pronađeno')
+
+        # Provjera preklapanja termina za to vozilo
+        for termin in vozilo.termini:
+            if datum_od <= termin.datum_do and datum_do >= termin.datum_od:
                 abort(409, description='Vozilo je već rezervirano u traženom terminu')
 
-    broj_dana = (datum_do - datum_od).days + 1
-    ukupna_cijena = broj_dana * float(vozilo['cijena_dnevnog_najma'])
+        broj_dana = (datum_do - datum_od).days + 1
+        ukupna_cijena = broj_dana * vozilo.cijena_dnevnog_najma
 
-    data['ukupna_cijena_najma'] = round(ukupna_cijena, 2)
-    data['datumi_rezervacije'] = [
-        (datum_od + timedelta(days=i)).strftime('%d-%m-%Y') for i in range(broj_dana)
-    ]
-    termini_najma.append(data)
+        TerminNajma(
+            vozilo=vozilo,
+            datum_od=datum_od,
+            datum_do=datum_do,
+            status=data['status'],
+            ukupna_cijena_najma=round(ukupna_cijena, 2)
+        )
     return jsonify({'message': 'Termin najma dodan'}), 201
 
 @app.route('/termin', methods=['GET'])
 def dohvati_termine():
-    return jsonify(termini_najma)
+    with orm.db_session:
+        termini = orm.select(t for t in TerminNajma)[:]
+        data = []
+        for t in termini:
+            d = t.to_dict()
+            d['datum_od'] = t.datum_od.strftime('%d-%m-%Y')
+            d['datum_do'] = t.datum_do.strftime('%d-%m-%Y')
+            d['vozilo_id'] = t.vozilo.id
+            data.append(d)
+        return jsonify(data)
+
+@app.route('/termin/<int:termin_id>', methods=['PATCH'])
+def azuriraj_termin(termin_id):
+    data = request.json
+    with orm.db_session:
+        termin = TerminNajma.get(id=termin_id)
+        if not termin:
+            abort(404, description="Termin nije pronađen")
+        if 'status' in data:
+            termin.status = data['status']
+        return jsonify({'message': 'Status termina ažuriran'})
 
 @app.route('/termin/<int:termin_id>', methods=['DELETE'])
 def obrisi_termin(termin_id):
-    for i, termin in enumerate(termini_najma):
-        if termin['id'] == termin_id:
-            del termini_najma[i]
-            return jsonify({'message': 'Termin obrisan'}), 200
-    abort(404, description="Termin nije pronađen")
-
-@app.route('/termin/<int:termin_id>', methods=['PATCH'])
-def azuriraj_status_termina(termin_id):
-    novi_status = request.json.get('status')
-    for termin in termini_najma:
-        if termin['id'] == termin_id:
-            termin['status'] = novi_status
-            return jsonify({'message': 'Status ažuriran'}), 200
-    abort(404, description="Termin nije pronađen")
+    with orm.db_session:
+        termin = TerminNajma.get(id=termin_id)
+        if not termin:
+            abort(404, description="Termin nije pronađen")
+        termin.delete()
+        return jsonify({'message': 'Termin obrisan'})
 
 if __name__ == '__main__':
     app.run(port=8080)

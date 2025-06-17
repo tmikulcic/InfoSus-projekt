@@ -17,7 +17,6 @@ cijena_dnevnog_najma (tip: decimal) – cijena najma vozila po danu
 # Entiteti:
 id (primarni ključ) (tip: integer)
 vozilo_id (strani ključ) (tip: integer)
-datumi_rezervacije (tip: array of datetime) – lista svih datuma unutar razdoblja rezervacije
 datum_od (datetime) - pocetni datum
 datum_do (datetime) - krajnji datum
 status (tip: string) – npr. rezerviran, u tijeku, otkazan
