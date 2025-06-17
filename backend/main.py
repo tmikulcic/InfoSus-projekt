@@ -27,7 +27,7 @@ class TerminNajma(DB.Entity):
     status = orm.Required(str)
     ukupna_cijena_najma = orm.Required(float)
 
-DB.bind(provider='sqlite', filename='najam.db', create_db=True)
+DB.bind(provider='sqlite', filename='db.sqlite', create_db=True)
 DB.generate_mapping(create_tables=True)
 
 # ===== ENDPOINTI =====
