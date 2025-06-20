@@ -1,31 +1,72 @@
 {% extends "base.html" %}
-{% block title %}{{ 'Uredi' if vozilo else 'Novo' }} vozilo{% endblock %}
+{% block title %}{{ 'Uredi' if vozilo else 'Novi' }} vozilo{% endblock %}
+
 {% block content %}
   <h2>{{ 'Uredi' if vozilo else 'Novi' }} vozilo</h2>
   <form method="post">
     {% if vozilo %}
       <input type="hidden" name="id" value="{{ vozilo.id }}">
     {% endif %}
-    {% for field,label,type in [
-      ('broj_sasije','Broj šasije','text'),
-      ('marka','Marka','text'),
-      ('model','Model','text'),
-      ('tip','Tip','text'),
-      ('godiste','Godište','number'),
-      ('boja','Boja','text'),
-      ('tip_goriva','Tip goriva','text'),
-      ('cijena_dnevnog_najma','Cijena dnevnog najma','number')
+
+    {% for field,label in [
+      ('broj_sasije','Broj šasije'),
+      ('marka','Marka'),
+      ('model','Model'),
+      ('boja','Boja'),
+      ('cijena_dnevnog_najma','Cijena dnevnog najma')
     ] %}
-    <div class="mb-3">
-      <label class="form-label">{{ label }}:</label>
-      <input
-        name="{{ field }}"
-        class="form-control"
-        type="{{ type }}"
-        value="{{ vozilo[field] if vozilo else '' }}"
-        required>
-    </div>
+      <div class="mb-3">
+        <label for="{{ field }}" class="form-label">{{ label }}:</label>
+        <input
+          id="{{ field }}"
+          name="{{ field }}"
+          class="form-control"
+          type="{{ 'number' if field=='cijena_dnevnog_najma' else 'text' }}"
+          value="{{ vozilo[field] if vozilo else '' }}"
+          required>
+      </div>
     {% endfor %}
+
+    {# Select za godište #}
+    <div class="mb-3">
+      <label for="godiste" class="form-label">Godište:</label>
+      <select id="godiste" name="godiste" class="form-control" required>
+        {% for year in range(2025, 1999, -1) %}
+          <option value="{{ year }}"
+            {% if vozilo and vozilo.godiste == year %}selected{% endif %}>
+            {{ year }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {# Select za tip vozila #}
+    <div class="mb-3">
+      <label for="tip" class="form-label">Tip vozila:</label>
+      <select id="tip" name="tip" class="form-control" required>
+        {% set tipi = ['Hatchback', 'Coupe', 'Limuzina', 'SUV', 'Karavan', 'Kabriolet'] %}
+        {% for opcija in tipi %}
+          <option value="{{ opcija }}"
+            {% if vozilo and vozilo.tip == opcija %}selected{% endif %}>
+            {{ opcija }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {# Select za tip goriva #}
+    <div class="mb-3">
+      <label for="tip_goriva" class="form-label">Tip goriva:</label>
+      <select id="tip_goriva" name="tip_goriva" class="form-control" required>
+        {% for opcija in ['Benzin', 'Dizel', 'Hibrid', 'Električno'] %}
+          <option value="{{ opcija }}"
+            {% if vozilo and vozilo.tip_goriva == opcija %}selected{% endif %}>
+            {{ opcija }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
     <button class="btn btn-success">{{ 'Spremi' if vozilo else 'Dodaj' }}</button>
   </form>
 {% endblock %}
