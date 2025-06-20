@@ -190,13 +190,13 @@ def nova_vozilo():
 
 @app.route('/vozilo/<int:vozilo_id>/uredi', methods=['GET', 'POST'])
 def uredi_vozilo(vozilo_id):
-    with orm.db_session:
-        vozilo = Vozilo.get(id=vozilo_id)
-        if not vozilo:
-            abort(404)
     if request.method == 'POST':
         data = request.form.to_dict()
         with orm.db_session:
+            vozilo = Vozilo.get(id=vozilo_id)
+            if not vozilo:
+                abort(404)
+            # sad smo unutar aktivne sesije, možemo mijenjati
             for k, v in data.items():
                 if k == 'cijena_dnevnog_najma':
                     setattr(vozilo, k, float(v))
@@ -206,7 +206,24 @@ def uredi_vozilo(vozilo_id):
                     setattr(vozilo, k, v)
         flash('Vozilo ažurirano.', 'success')
         return redirect(url_for('home'))
-    return render_template('vozilo_form.html', vozilo=vozilo.to_dict())
+
+    # GET: samo dohvatimo vrijednosti, bez držanja objekta entiteta izvan sesije
+    with orm.db_session:
+        vozilo = Vozilo.get(id=vozilo_id)
+        if not vozilo:
+            abort(404)
+        vozilo_data = {
+            'id': vozilo.id,
+            'broj_sasije': vozilo.broj_sasije,
+            'marka': vozilo.marka,
+            'model': vozilo.model,
+            'tip': vozilo.tip,
+            'godiste': vozilo.godiste,
+            'boja': vozilo.boja,
+            'tip_goriva': vozilo.tip_goriva,
+            'cijena_dnevnog_najma': vozilo.cijena_dnevnog_najma
+        }
+    return render_template('vozilo_form.html', vozilo=vozilo_data)
 
 # --- Termin CRUD preko web forme ---
 @app.route('/termin/novi', methods=['GET', 'POST'])
@@ -243,25 +260,28 @@ def novi_termin():
 
 @app.route('/termin/<int:termin_id>/uredi', methods=['GET', 'POST'])
 def uredi_termin(termin_id):
-    with orm.db_session:
-        termin = TerminNajma.get(id=termin_id)
-        if not termin:
-            abort(404)
     if request.method == 'POST':
         data = request.form.to_dict()
         with orm.db_session:
+            termin = TerminNajma.get(id=termin_id)
+            if not termin:
+                abort(404)
             if 'status' in data:
                 termin.status = data['status']
         flash('Termin ažuriran.', 'success')
         return redirect(url_for('home'))
 
-    termin_data = {
-        'id': termin.id,
-        'vozilo': termin.vozilo,
-        'datum_od': termin.datum_od.strftime('%Y-%m-%d'),
-        'datum_do': termin.datum_do.strftime('%Y-%m-%d'),
-        'status': termin.status
-    }
+    with orm.db_session:
+        termin = TerminNajma.get(id=termin_id)
+        if not termin:
+            abort(404)
+        termin_data = {
+            'id': termin.id,
+            'vozilo_id': termin.vozilo.id,
+            'datum_od': termin.datum_od.strftime('%Y-%m-%d'),
+            'datum_do': termin.datum_do.strftime('%Y-%m-%d'),
+            'status': termin.status
+        }
     return render_template('termin_form.html', termin=termin_data)
 
 if __name__ == '__main__':
