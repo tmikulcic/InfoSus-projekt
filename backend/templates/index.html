@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Pregled vozila i termina{% endblock %}
+{% block content %}
+  <h2>Vozila</h2>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>ID</th><th>Šasija</th><th>Marka</th><th>Model</th><th>Tip</th>
+        <th>Godište</th><th>Gorivo</th><th>Cijena/dan</th><th>Akcije</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in vozila %}
+      <tr>
+        <td>{{ v.id }}</td>
+        <td>{{ v.broj_sasije }}</td>
+        <td>{{ v.marka }}</td>
+        <td>{{ v.model }}</td>
+        <td>{{ v.tip }}</td>
+        <td>{{ v.godiste }}</td>
+        <td>{{ v.tip_goriva }}</td>
+        <td>{{ v.cijena_dnevnog_najma }}</td>
+        <td>
+          <a href="{{ url_for('uredi_vozilo', vozilo_id=v.id) }}" class="btn btn-sm btn-primary">Uredi</a>
+          <button class="btn btn-sm btn-danger"
+                  onclick="obrisi('/vozilo/{{v.id}}')">Obriši</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2 class="mt-5">Termini najma</h2>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>ID</th><th>Vozilo ID</th><th>Od</th><th>Do</th>
+        <th>Status</th><th>Cijena</th><th>Akcije</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in termini %}
+      <tr>
+        <td>{{ t.id }}</td>
+        <td>{{ t.vozilo_id }}</td>
+        <td>{{ t.datum_od }}</td>
+        <td>{{ t.datum_do }}</td>
+        <td>{{ t.status }}</td>
+        <td>{{ t.ukupna_cijena_najma }}</td>
+        <td>
+          <a href="{{ url_for('uredi_termin', termin_id=t.id) }}" class="btn btn-sm btn-primary">Uredi</a>
+          <button class="btn btn-sm btn-danger"
+                  onclick="obrisi('/termin/{{t.id}}')">Obriši</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function obrisi(url) {
+    if (confirm('Potvrdite brisanje?')) {
+      fetch(url, { method: 'DELETE' })
+        .then(r => {
+          if (r.ok) location.reload();
+          else r.text().then(t => alert(t));
+        });
+    }
+  }
+</script>
+{% endblock %}

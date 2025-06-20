@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Uredi' if vozilo else 'Novo' }} vozilo{% endblock %}
+{% block content %}
+  <h2>{{ 'Uredi' if vozilo else 'Novi' }} vozilo</h2>
+  <form method="post">
+    {% if vozilo %}
+      <input type="hidden" name="id" value="{{ vozilo.id }}">
+    {% endif %}
+    {% for field,label,type in [
+      ('broj_sasije','Broj šasije','text'),
+      ('marka','Marka','text'),
+      ('model','Model','text'),
+      ('tip','Tip','text'),
+      ('godiste','Godište','number'),
+      ('boja','Boja','text'),
+      ('tip_goriva','Tip goriva','text'),
+      ('cijena_dnevnog_najma','Cijena dnevnog najma','number')
+    ] %}
+    <div class="mb-3">
+      <label class="form-label">{{ label }}:</label>
+      <input
+        name="{{ field }}"
+        class="form-control"
+        type="{{ type }}"
+        value="{{ vozilo[field] if vozilo else '' }}"
+        required>
+    </div>
+    {% endfor %}
+    <button class="btn btn-success">{{ 'Spremi' if vozilo else 'Dodaj' }}</button>
+  </form>
+{% endblock %}
