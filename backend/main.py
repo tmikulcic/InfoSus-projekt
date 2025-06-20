@@ -186,6 +186,7 @@ def nova_vozilo():
             return redirect(url_for('home'))
         except orm.ConstraintError:
             flash('Broj šasije već postoji.', 'danger')
+
     return render_template('vozilo_form.html', vozilo=None)
 
 @app.route('/vozilo/<int:vozilo_id>/uredi', methods=['GET', 'POST'])
@@ -196,7 +197,6 @@ def uredi_vozilo(vozilo_id):
             vozilo = Vozilo.get(id=vozilo_id)
             if not vozilo:
                 abort(404)
-            # sad smo unutar aktivne sesije, možemo mijenjati
             for k, v in data.items():
                 if k == 'cijena_dnevnog_najma':
                     setattr(vozilo, k, float(v))
@@ -207,7 +207,6 @@ def uredi_vozilo(vozilo_id):
         flash('Vozilo ažurirano.', 'success')
         return redirect(url_for('home'))
 
-    # GET: samo dohvatimo vrijednosti, bez držanja objekta entiteta izvan sesije
     with orm.db_session:
         vozilo = Vozilo.get(id=vozilo_id)
         if not vozilo:
@@ -223,6 +222,7 @@ def uredi_vozilo(vozilo_id):
             'tip_goriva': vozilo.tip_goriva,
             'cijena_dnevnog_najma': vozilo.cijena_dnevnog_najma
         }
+
     return render_template('vozilo_form.html', vozilo=vozilo_data)
 
 # --- Termin CRUD preko web forme ---
@@ -239,7 +239,6 @@ def novi_termin():
                 vozilo = Vozilo.get(id=int(data['vozilo_id']))
                 if not vozilo:
                     raise ValueError('Vozilo nije pronađeno')
-                # provjera preklapanja
                 for t in vozilo.termini:
                     if datum_od <= t.datum_do and datum_do >= t.datum_od:
                         raise ValueError('Preklapajući termin')
@@ -256,7 +255,11 @@ def novi_termin():
             return redirect(url_for('home'))
         except Exception as e:
             flash(str(e), 'danger')
-    return render_template('termin_form.html', termin=None)
+
+    # Dohvati vozila za select listu
+    with orm.db_session:
+        vozila = orm.select(v for v in Vozilo)[:]
+    return render_template('termin_form.html', termin=None, vozila=vozila)
 
 @app.route('/termin/<int:termin_id>/uredi', methods=['GET', 'POST'])
 def uredi_termin(termin_id):
@@ -282,7 +285,9 @@ def uredi_termin(termin_id):
             'datum_do': termin.datum_do.strftime('%Y-%m-%d'),
             'status': termin.status
         }
-    return render_template('termin_form.html', termin=termin_data)
+        vozila = orm.select(v for v in Vozilo)[:]
+
+    return render_template('termin_form.html', termin=termin_data, vozila=vozila)
 
 if __name__ == '__main__':
     app.run(port=8080, debug=True)

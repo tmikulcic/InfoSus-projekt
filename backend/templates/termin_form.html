@@ -1,31 +1,54 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Uredi' if termin else 'Novi' }} termin{% endblock %}
+
 {% block content %}
   <h2>{{ 'Uredi' if termin else 'Novi' }} termin</h2>
   <form method="post">
     {% if termin %}
       <input type="hidden" name="id" value="{{ termin.id }}">
     {% endif %}
+
+    <!-- Select za vozilo -->
     <div class="mb-3">
-      <label class="form-label">Vozilo ID:</label>
-      <input name="vozilo_id" class="form-control" type="number"
-        value="{{ termin.vozilo.id if termin else '' }}" required>
+      <label for="vozilo_id" class="form-label">Vozilo:</label>
+      <select id="vozilo_id" name="vozilo_id" class="form-control" required>
+        {% for v in vozila %}
+          <option value="{{ v.id }}"
+            {% if termin and termin.vozilo_id == v.id %}selected{% endif %}>
+            {{ v.id }} - {{ v.marka }} {{ v.model }}
+          </option>
+        {% endfor %}
+      </select>
     </div>
+
+    <!-- Datum od -->
     <div class="mb-3">
-      <label class="form-label">Datum od:</label>
-      <input name="datum_od" class="form-control" type="date"
+      <label for="datum_od" class="form-label">Datum od:</label>
+      <input id="datum_od" name="datum_od" class="form-control" type="date"
         value="{{ termin.datum_od if termin else '' }}" required>
     </div>
+
+    <!-- Datum do -->
     <div class="mb-3">
-      <label class="form-label">Datum do:</label>
-      <input name="datum_do" class="form-control" type="date"
+      <label for="datum_do" class="form-label">Datum do:</label>
+      <input id="datum_do" name="datum_do" class="form-control" type="date"
         value="{{ termin.datum_do if termin else '' }}" required>
     </div>
+
+    <!-- Select za status termina -->
     <div class="mb-3">
-      <label class="form-label">Status:</label>
-      <input name="status" class="form-control" type="text"
-        value="{{ termin.status if termin else '' }}" required>
+      <label for="status" class="form-label">Status:</label>
+      <select id="status" name="status" class="form-control" required>
+        {% set statusi = ['Na čekanju', 'Potvrđen', 'Otkazan', 'Završen'] %}
+        {% for opcija in statusi %}
+          <option value="{{ opcija }}"
+            {% if termin and termin.status == opcija %}selected{% endif %}>
+            {{ opcija }}
+          </option>
+        {% endfor %}
+      </select>
     </div>
+
     <button class="btn btn-success">{{ 'Spremi' if termin else 'Dodaj' }}</button>
   </form>
 {% endblock %}
