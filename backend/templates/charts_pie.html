@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Raspodjela vozila{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-6">
+      <h5>Tip goriva</h5>
+      <canvas id="chartFuel"></canvas>
+    </div>
+    <div class="col-md-6">
+      <h5>Tip vozila</h5>
+      <canvas id="chartType"></canvas>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  new Chart(
+    document.getElementById('chartFuel').getContext('2d'),
+    { type: 'pie', data: { labels: {{ labelsFuel|safe }}, datasets: [{ data: {{ dataFuel|safe }} }] } }
+  );
+  new Chart(
+    document.getElementById('chartType').getContext('2d'),
+    { type: 'pie', data: { labels: {{ labelsType|safe }}, datasets: [{ data: {{ dataType|safe }} }] } }
+  );
+</script>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Prihodi po vozilu{% endblock %}
+
+{% block content %}
+  <canvas id="chartEarnings"></canvas>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  new Chart(
+    document.getElementById('chartEarnings').getContext('2d'),
+    {
+      type:'bar',
+      data:{
+        labels:{{ labelsE|safe }},
+        datasets:[{
+          label:'Ukupna cijena najma',
+          data:{{ dataE|safe }}
+        }]
+      },
+      options:{
+        scales:{ y:{ beginAtZero:true, title:{ display:true, text:'Prihod' } } }
+      }
+    }
+  );
+</script>
+{% endblock %}

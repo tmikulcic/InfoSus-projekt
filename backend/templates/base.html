@@ -15,14 +15,16 @@
       <a class="navbar-brand" href="{{ url_for('home') }}">Rental App</a>
       <div class="collapse navbar-collapse">
         <ul class="navbar-nav me-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('home') }}">Pregled</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('nova_vozilo') }}">Novo vozilo</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('novi_termin') }}">Novi termin</a>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('home') }}">Pregled</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('nova_vozilo') }}">Novo vozilo</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('novi_termin') }}">Novi termin</a></li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Grafikoni</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{{ url_for('charts_pie') }}">Tip goriva &amp; tip vozila</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('charts_years') }}">Godišta (2000–2025)</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('charts_earnings') }}">Prihodi po vozilu</a></li>
+            </ul>
           </li>
         </ul>
       </div>
@@ -30,14 +32,13 @@
   </nav>
 
   <div class="container">
-    {% with messages = get_flashed_messages() %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <div class="alert alert-info">
-          {% for msg in messages %}{{ msg }}<br>{% endfor %}
-        </div>
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }}">{{ msg }}</div>
+        {% endfor %}
       {% endif %}
     {% endwith %}
-
     {% block content %}{% endblock %}
   </div>
 

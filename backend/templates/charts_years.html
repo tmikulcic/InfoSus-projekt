@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Vozila po godinama{% endblock %}
+
+{% block content %}
+  <canvas id="chartYears"></canvas>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  new Chart(
+    document.getElementById('chartYears').getContext('2d'),
+    {
+      type: 'line',
+      data: {
+        labels: {{ labelsYears|safe }},
+        datasets:[{
+          label:'Broj vozila',
+          data:{{ dataYears|safe }},
+          fill:false,
+          tension:0.3
+        }]
+      },
+      options:{
+        scales:{ y:{ beginAtZero:true, title:{ display:true, text:'Broj vozila' } } }
+      }
+    }
+  );
+</script>
+{% endblock %}

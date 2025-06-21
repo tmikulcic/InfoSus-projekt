@@ -83,7 +83,7 @@ def azuriraj_vozilo_api(vozilo_id):
         vozilo = Vozilo.get(id=vozilo_id)
         if not vozilo:
             abort(404, description="Vozilo nije pronađeno")
-        for key in ['broj_sasije', 'marka', 'model', 'tip', 'godiste', 'boja', 'tip_goriva', 'cijena_dnevnog_najma']:
+        for key in ['broj_sasije','marka','model','tip','godiste','boja','tip_goriva','cijena_dnevnog_najma']:
             if key in data:
                 setattr(vozilo, key, data[key])
         return jsonify({'message': 'Vozilo ažurirano'})
@@ -106,7 +106,6 @@ def dodaj_termin_api():
         datum_do = datetime.strptime(data['datum_do'], '%d-%m-%Y')
     except ValueError:
         abort(400, description='Neispravan format datuma (dd-mm-yyyy)')
-
     if datum_do < datum_od:
         abort(400, description='Krajnji datum ne može biti prije početnog')
 
@@ -114,21 +113,17 @@ def dodaj_termin_api():
         vozilo = Vozilo.get(id=data['vozilo_id'])
         if not vozilo:
             abort(400, description='Vozilo nije pronađeno')
-
-        # Provjera preklapanja termina
         for termin in vozilo.termini:
             if datum_od <= termin.datum_do and datum_do >= termin.datum_od:
                 abort(409, description='Vozilo je već rezervirano u traženom terminu')
-
         broj_dana = (datum_do - datum_od).days + 1
         ukupna_cijena = broj_dana * vozilo.cijena_dnevnog_najma
-
         TerminNajma(
             vozilo=vozilo,
             datum_od=datum_od,
             datum_do=datum_do,
             status=data['status'],
-            ukupna_cijena_najma=round(ukupna_cijena, 2)
+            ukupna_cijena_najma=round(ukupna_cijena,2)
         )
     return jsonify({'message': 'Termin najma dodan'}), 201
 
@@ -166,7 +161,7 @@ def obrisi_termin_api(termin_id):
         return jsonify({'message': 'Termin obrisan'})
 
 # --- Vozilo CRUD preko web forme ---
-@app.route('/vozilo/novo', methods=['GET', 'POST'])
+@app.route('/vozilo/novo', methods=['GET','POST'])
 def nova_vozilo():
     if request.method == 'POST':
         data = request.form.to_dict()
@@ -186,10 +181,9 @@ def nova_vozilo():
             return redirect(url_for('home'))
         except orm.ConstraintError:
             flash('Broj šasije već postoji.', 'danger')
-
     return render_template('vozilo_form.html', vozilo=None)
 
-@app.route('/vozilo/<int:vozilo_id>/uredi', methods=['GET', 'POST'])
+@app.route('/vozilo/<int:vozilo_id>/uredi', methods=['GET','POST'])
 def uredi_vozilo(vozilo_id):
     if request.method == 'POST':
         data = request.form.to_dict()
@@ -197,13 +191,13 @@ def uredi_vozilo(vozilo_id):
             vozilo = Vozilo.get(id=vozilo_id)
             if not vozilo:
                 abort(404)
-            for k, v in data.items():
-                if k == 'cijena_dnevnog_najma':
-                    setattr(vozilo, k, float(v))
-                elif k == 'godiste':
-                    setattr(vozilo, k, int(v))
+            for k,v in data.items():
+                if k=='cijena_dnevnog_najma':
+                    setattr(vozilo,k,float(v))
+                elif k=='godiste':
+                    setattr(vozilo,k,int(v))
                 else:
-                    setattr(vozilo, k, v)
+                    setattr(vozilo,k,v)
         flash('Vozilo ažurirano.', 'success')
         return redirect(url_for('home'))
 
@@ -222,11 +216,10 @@ def uredi_vozilo(vozilo_id):
             'tip_goriva': vozilo.tip_goriva,
             'cijena_dnevnog_najma': vozilo.cijena_dnevnog_najma
         }
-
     return render_template('vozilo_form.html', vozilo=vozilo_data)
 
 # --- Termin CRUD preko web forme ---
-@app.route('/termin/novi', methods=['GET', 'POST'])
+@app.route('/termin/novi', methods=['GET','POST'])
 def novi_termin():
     if request.method == 'POST':
         data = request.form.to_dict()
@@ -249,19 +242,18 @@ def novi_termin():
                     datum_od=datum_od,
                     datum_do=datum_do,
                     status=data['status'],
-                    ukupna_cijena_najma=round(cijena, 2)
+                    ukupna_cijena_najma=round(cijena,2)
                 )
             flash('Termin je dodan.', 'success')
             return redirect(url_for('home'))
         except Exception as e:
             flash(str(e), 'danger')
 
-    # Dohvati vozila za select listu
     with orm.db_session:
         vozila = orm.select(v for v in Vozilo)[:]
     return render_template('termin_form.html', termin=None, vozila=vozila)
 
-@app.route('/termin/<int:termin_id>/uredi', methods=['GET', 'POST'])
+@app.route('/termin/<int:termin_id>/uredi', methods=['GET','POST'])
 def uredi_termin(termin_id):
     if request.method == 'POST':
         data = request.form.to_dict()
@@ -286,8 +278,51 @@ def uredi_termin(termin_id):
             'status': termin.status
         }
         vozila = orm.select(v for v in Vozilo)[:]
-
     return render_template('termin_form.html', termin=termin_data, vozila=vozila)
+
+# --- Chart.js routes ---
+@app.route('/charts/pie')
+def charts_pie():
+    with orm.db_session:
+        fuel_counts = {}
+        type_counts = {}
+        for v in orm.select(v for v in Vozilo)[:]:
+            fuel_counts[v.tip_goriva] = fuel_counts.get(v.tip_goriva, 0) + 1
+            type_counts[v.tip]         = type_counts.get(v.tip, 0) + 1
+
+    return render_template(
+        'charts_pie.html',
+        labelsFuel=list(fuel_counts.keys()), dataFuel=list(fuel_counts.values()),
+        labelsType=list(type_counts.keys()),   dataType=list(type_counts.values())
+    )
+
+@app.route('/charts/years')
+def charts_years():
+    with orm.db_session:
+        vozila = orm.select(v for v in Vozilo)[:]
+    years = list(range(2000, 2026))
+    counts = [0]*len(years)
+    for v in vozila:
+        if 2000 <= v.godiste <= 2025:
+            counts[years.index(v.godiste)] += 1
+
+    return render_template(
+        'charts_years.html',
+        labelsYears=years, dataYears=counts
+    )
+
+@app.route('/charts/earnings')
+def charts_earnings():
+    with orm.db_session:
+        sums = {}
+        for t in orm.select(t for t in TerminNajma)[:]:
+            lbl = f"{t.vozilo.id} - {t.vozilo.marka} {t.vozilo.model}"
+            sums[lbl] = sums.get(lbl, 0) + t.ukupna_cijena_najma
+    items = sorted(sums.items(), key=lambda x: x[1], reverse=True)
+    return render_template(
+        'charts_earnings.html',
+        labelsE=[i[0] for i in items], dataE=[i[1] for i in items]
+    )
 
 if __name__ == '__main__':
     app.run(port=8080, debug=True)

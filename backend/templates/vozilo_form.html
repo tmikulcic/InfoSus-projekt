@@ -8,6 +8,7 @@
       <input type="hidden" name="id" value="{{ vozilo.id }}">
     {% endif %}
 
+    <!-- Polja text/number -->
     {% for field,label in [
       ('broj_sasije','Broj šasije'),
       ('marka','Marka'),
@@ -27,42 +28,33 @@
       </div>
     {% endfor %}
 
-    {# Select za godište #}
+    <!-- Select godište -->
     <div class="mb-3">
       <label for="godiste" class="form-label">Godište:</label>
       <select id="godiste" name="godiste" class="form-control" required>
         {% for year in range(2025, 1999, -1) %}
-          <option value="{{ year }}"
-            {% if vozilo and vozilo.godiste == year %}selected{% endif %}>
-            {{ year }}
-          </option>
+          <option value="{{ year }}" {% if vozilo and vozilo.godiste==year %}selected{% endif %}>{{ year }}</option>
         {% endfor %}
       </select>
     </div>
 
-    {# Select za tip vozila #}
+    <!-- Select tip -->
     <div class="mb-3">
       <label for="tip" class="form-label">Tip vozila:</label>
       <select id="tip" name="tip" class="form-control" required>
-        {% set tipi = ['Hatchback', 'Coupe', 'Limuzina', 'SUV', 'Karavan', 'Kabriolet'] %}
+        {% set tipi = ['Hatchback','Coupe','Limuzina','SUV','Karavan','Kabriolet'] %}
         {% for opcija in tipi %}
-          <option value="{{ opcija }}"
-            {% if vozilo and vozilo.tip == opcija %}selected{% endif %}>
-            {{ opcija }}
-          </option>
+          <option value="{{ opcija }}" {% if vozilo and vozilo.tip==opcija %}selected{% endif %}>{{ opcija }}</option>
         {% endfor %}
       </select>
     </div>
 
-    {# Select za tip goriva #}
+    <!-- Select gorivo -->
     <div class="mb-3">
       <label for="tip_goriva" class="form-label">Tip goriva:</label>
       <select id="tip_goriva" name="tip_goriva" class="form-control" required>
-        {% for opcija in ['Benzin', 'Dizel', 'Hibrid', 'Električno'] %}
-          <option value="{{ opcija }}"
-            {% if vozilo and vozilo.tip_goriva == opcija %}selected{% endif %}>
-            {{ opcija }}
-          </option>
+        {% for opcija in ['Benzin','Dizel','Hibrid','Električno'] %}
+          <option value="{{ opcija }}" {% if vozilo and vozilo.tip_goriva==opcija %}selected{% endif %}>{{ opcija }}</option>
         {% endfor %}
       </select>
     </div>
