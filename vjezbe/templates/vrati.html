@@ -30,6 +30,12 @@
             <li class="nav-item">
               <a class="nav-link" href="{{url_for('vrati_obaveze')}}">Popis Obaveza</a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{url_for('vizualizacija')}}">Vizualizacija</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{url_for('obaveze_po_kategorijama')}}">Vizualizacija kategorija</a>
+        </li>
           </ul>
         </div>
       </div>
@@ -65,6 +71,7 @@
               .then(response => response.json())
               .then(data => {
                 if (data.response === 'Success') {
+                  // Osveži stranicu nakon brisanja
                   location.reload();
                 } else {
                   console.error('Došlo je do greške prilikom brisanja obaveze:', data.error);
