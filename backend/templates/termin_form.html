@@ -12,6 +12,7 @@
     <div class="mb-3">
       <label for="vozilo_id" class="form-label">Vozilo:</label>
       <select id="vozilo_id" name="vozilo_id" class="form-control" required>
+        <option value="" disabled {{ 'selected' if not termin }}>Odaberi vozilo</option>
         {% for v in vozila %}
           <option value="{{ v.id }}" {% if termin and termin.vozilo_id==v.id %}selected{% endif %}>
             {{ v.id }} - {{ v.marka }} {{ v.model }}
@@ -19,6 +20,9 @@
         {% endfor %}
       </select>
     </div>
+
+    <!-- Ispis zauzetih termina -->
+    <div id="busy-terms" class="mb-3"></div>
 
     <!-- Datum od/do -->
     <div class="mb-3">
@@ -46,4 +50,37 @@
 
     <button class="btn btn-success">{{ 'Spremi' if termin else 'Dodaj' }}</button>
   </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function loadBusyTerms(voziloId) {
+    const div = document.getElementById('busy-terms');
+    if (!voziloId) {
+      div.innerHTML = '';
+      return;
+    }
+    const resp = await fetch(`/termini_vozila/${voziloId}`);
+    const terms = await resp.json();
+    if (terms.length === 0) {
+      div.innerHTML = '<small class="text-success">Nema zauzetih termina za odabrano vozilo.</small>';
+    } else {
+      let html = '<label class="form-label">Zauzeti termini:</label><ul class="list-group">';
+      for (const t of terms) {
+        // preformatiramo iz "YYYY-MM-DD" u "DD.MM.YYYY"
+        const od  = t.datum_od.split('-').reverse().join('.');
+        const doD = t.datum_do.split('-').reverse().join('.');
+        html += `<li class="list-group-item">${od} - ${doD}</li>`;
+      }
+      html += '</ul>';
+      div.innerHTML = html;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const select = document.getElementById('vozilo_id');
+    loadBusyTerms(select.value);
+    select.addEventListener('change', () => loadBusyTerms(select.value));
+  });
+</script>
 {% endblock %}

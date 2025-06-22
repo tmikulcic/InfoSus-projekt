@@ -280,6 +280,17 @@ def uredi_termin(termin_id):
         vozila = orm.select(v for v in Vozilo)[:]
     return render_template('termin_form.html', termin=termin_data, vozila=vozila)
 
+# --- Dohvat zauzetih termina za odabrano vozilo ---
+@app.route('/termini_vozila/<int:vozilo_id>')
+def termini_vozila(vozilo_id):
+    with orm.db_session:
+        terms = orm.select(t for t in TerminNajma if t.vozilo.id == vozilo_id)[:]
+        data = [{
+            'datum_od': t.datum_od.strftime('%Y-%m-%d'),
+            'datum_do': t.datum_do.strftime('%Y-%m-%d')
+        } for t in terms]
+    return jsonify(data)
+
 # --- Chart.js routes ---
 @app.route('/charts/pie')
 def charts_pie():
