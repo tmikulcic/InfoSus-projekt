@@ -311,7 +311,7 @@ def charts_pie():
 def charts_years():
     with orm.db_session:
         vozila = orm.select(v for v in Vozilo)[:]
-    years = list(range(2000, 2026))
+    years = list(range(2010, 2026))
     counts = [0]*len(years)
     for v in vozila:
         if 2000 <= v.godiste <= 2025:

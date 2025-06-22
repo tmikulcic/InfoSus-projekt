@@ -32,7 +32,7 @@
     <div class="mb-3">
       <label for="godiste" class="form-label">Godište:</label>
       <select id="godiste" name="godiste" class="form-control" required>
-        {% for year in range(2025, 1999, -1) %}
+        {% for year in range(2025, 2009, -1) %}
           <option value="{{ year }}" {% if vozilo and vozilo.godiste==year %}selected{% endif %}>{{ year }}</option>
         {% endfor %}
       </select>
