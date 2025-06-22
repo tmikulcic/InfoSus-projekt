@@ -1,6 +1,6 @@
 ## Klasa: Vozilo
 
-# Entiteti:
+**Entiteti:**
 id (primarni ključ) (tip: integer)
 broj_sasije (string, UNIQUE)
 marka (tip: string)
@@ -14,10 +14,13 @@ cijena_dnevnog_najma (tip: decimal) – cijena najma vozila po danu
 
 ## Klasa: Termin_najma
 
-# Entiteti:
+**Entiteti:**
 id (primarni ključ) (tip: integer)
 vozilo_id (strani ključ) (tip: integer)
 datum_od (datetime) - pocetni datum
 datum_do (datetime) - krajnji datum
 status (tip: string) – npr. rezerviran, u tijeku, otkazan
 ukupna_cijena_najma (tip: decimal) – ukupna cijena najma izračunata na temelju cijene dnevnog najma vozila i trajanja najma
+
+## Use case dijagam
+![Use case dijagram](Use-case.jpg)
